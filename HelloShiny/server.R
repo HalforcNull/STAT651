@@ -1,5 +1,5 @@
 library(shiny)
-
+source('customPackages/showHistPlot.R')
 # Define server logic required to generate and plot a random distribution
 shinyServer(function(input, output) {
   
@@ -11,10 +11,8 @@ shinyServer(function(input, output) {
   #  2) Its output type is a plot 
   #
   output$distPlot <- renderPlot({
-    
     # generate an rnorm distribution and plot it
-    dist <- rnorm(input$obs)
-    hist(dist)
+    showHistPlot(input)
   })
   
 })
