@@ -48,6 +48,8 @@ nrow(trans.dat.util)
 head(trans.dat.util)
 summary(trans.dat.util)
 
+member.list.util <- trans.dat.util$DebtDimId
+
 ```
 
 ## 3. Figure out which state the user is living in
@@ -64,7 +66,13 @@ Bias? Yes. If someone never eat outside if they could cook (at home), however, t
 
 ### restaurant and fast food having MCCcode: 5812 and 5814
 ```{r}
-trans.dat.food <- 
+trans.dat.food <- trans.dat[which(trans.dat$MCCcode == 5812 | trans.dat$MCCcode == 5814 ),]
 
+member.not.in.food <- member.list.util[which(!( member.list.util %in% trans.dat.food$DebtDimId) )]
 
+length(member.not.in.food)
 ```
+
+In 873 members, we have 224 member has no food record.
+ 
+### durg store or pharmacies MCCcode: 
