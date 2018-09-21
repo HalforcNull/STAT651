@@ -1,0 +1,70 @@
+---
+title: "Homework 2 Part 1. My own question and solution"
+author: "Runan Yao"
+date: "September 21, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+```
+
+# Question:
+1. In each state, which utility company supplies most of our custom? 
+2. If we want money back from utility companies, which one will be the best target?
+
+Note:
+1. Utilities – Electric, Gas, Water, Sanitary Fees has a unique MCCcode: 4900.
+2. These utility bills often go with a 800 number and address. As we being told in class, the address is the company address, not the user address.
+3. We also make an assumption that, the utility are paid together in one transaction. (This may not true, but it could simplify the question)
+
+
+# Solution:
+
+## 1. Load data from file:
+```{r}
+trans1 <- read.csv('Data/April Vintage Transactions page 1.csv', stringsAsFactors=FALSE)
+trans2 <- read.csv('Data/April Vintage Transactions page 2.csv', stringsAsFactors=FALSE)
+trans2$DebtDimId <- as.character(trans2$DebtDimId)
+trans3 <- read.csv('Data/April Vintage Transactions page 3.csv', stringsAsFactors=FALSE)
+trans3$DebtDimId <- as.character(trans3$DebtDimId)
+trans4 <- read.csv('Data/April Vintage Transactions page 4.csv', stringsAsFactors=FALSE)
+trans4$DebtDimId <- as.character(trans4$DebtDimId)
+
+trans.dat <- bind_rows( bind_rows(trans1,trans2),bind_rows(trans3,trans4) )
+nrow(trans.dat)
+head(trans.dat)
+summary(trans.dat)
+
+```
+
+## 2. Find all utility transaction
+
+```{r}
+trans.dat.util <- trans.dat[which(trans.dat$MCCcode == 4900),]
+
+nrow(trans.dat.util)
+head(trans.dat.util)
+summary(trans.dat.util)
+
+```
+
+## 3. Figure out which state the user is living in
+Here I suggest using fast food/restaurant to figure out where the member are living in. 
+
+If we cannot find any fast food/restaurant record, we then move to durg store/pharmacies. 
+
+The third one we will try to use (if above two cannot give us the answer), is gas station. (Note: there are 2 different MCCcode for fuel supply)
+
+If still not, we will report how many we are failed to be located.
+
+Bias? Yes. If someone never eat outside if they could cook (at home), however, they eat fast food when they are traveling. Then, the address of this member will be miss classified.
+
+
+### restaurant and fast food having MCCcode: 5812 and 5814
+```{r}
+trans.dat.food <- 
+
+
+```
