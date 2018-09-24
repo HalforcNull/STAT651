@@ -57,7 +57,7 @@ Here I suggest using fast food/restaurant to figure out where the member are liv
 
 If we cannot find any fast food/restaurant record, we then move to durg store/pharmacies. 
 
-The third one we will try to use (if above two cannot give us the answer), is gas station. (Note: there are 2 different MCCcode for fuel supply)
+The third one we will try to use (if above two cannot give us the answer), is gas station. (Note: there are 2 different MCCcode for fuel supply, one of them is auto fuel only: 5542, the other one is Fuel Dealers – Coal, Fuel Oil, Liquefied Petroleum, Wood: 5983)
 
 If still not, we will report how many we are failed to be located.
 
@@ -75,4 +75,32 @@ length(member.not.in.food)
 
 In 873 members, we have 224 member has no food record.
  
-### durg store or pharmacies MCCcode: 
+### durg store or pharmacies MCCcode: 5912
+```{r}
+trans.dat.drug <- trans.dat[which(trans.dat$MCCcode == 5912 ),]
+
+member.not.in.durg.either <- member.not.in.food[which(!( member.not.in.food %in% trans.dat.drug$DebtDimId) )]
+
+length(member.not.in.durg.either)
+```
+
+In 224 unkown member, 170 has no durg record.
+
+### Automated Fuel Dispenser
+
+```{r}
+trans.dat.fuel <- trans.dat[which(trans.dat$MCCcode == 5542 ),]
+
+member.not.located <- member.not.in.durg.either[which(!( member.not.in.durg.either %in% trans.dat.fuel$DebtDimId) )]
+
+length(member.not.located)
+```
+
+After 3 different tech, we still have 109 member cannot be located. 
+
+
+
+
+
+
+
