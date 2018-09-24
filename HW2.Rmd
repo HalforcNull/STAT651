@@ -156,17 +156,28 @@ Bind member id, transaction day, store name, store loc
 ```{r}
 member.id <- temp$DebtDimId
 transaction.Day <- temp$TimeDimDt
-tbl.clean.trans <- cbind( cbind(member.id, transaction.Day), cbind(store.name, store.loc) )
+tbl.clean.trans <- as.data.frame(cbind( cbind(member.id, transaction.Day), cbind(store.name, store.loc) ))
 
 rm(member.id, transaction.Day, store.name, store.loc)
 ```
 
 
+4. Fill Home state into transaction table
+```{r}
+HomeState <- NULL
+for(i in 1:nrow(tbl.clean.trans)){
+  transId <- tbl.clean.trans$transaction.Day[i]
+  transDay <- as.Date(tbl.clean.trans$member.id[i], "%m/%d/%Y")
+  HS <- tbl.Member.HomeState %>%
+    filter(DebtDimId == transId & StartDay <= transDay & EndDay >= transDay) %>%
+    select(State)
+  HomeState <- c(HomeState, HS)
+}
 
 
 
 
-
+```
 <!-- ### 2. Find all utility transaction -->
 
 <!-- ```{r} -->

@@ -131,15 +131,12 @@ $(document).ready(function () {
 
 <div id="question" class="section level2">
 <h2>Question:</h2>
-<ol style="list-style-type: decimal">
-<li>In each state, which utility company supplies most of our custom?</li>
-<li>If we want money back from utility companies, which one will be the best target?</li>
-</ol>
+<p>When our member travel between different states, which fast food/restaurant is most popular ?</p>
 <p>Note:</p>
 <ol style="list-style-type: decimal">
-<li>Utilities – Electric, Gas, Water, Sanitary Fees has a unique MCCcode: 4900.</li>
-<li>These utility bills often go with a 800 number and address. As we being told in class, the address is the company address, not the user address.</li>
-<li>We also make an assumption that, the utility are paid together in one transaction. (This may not true, but it could simplify the question)</li>
+<li><p>Member home location can be found in member profile. It is changing overtime. So, when matching transaction with member profile, we need match by both member Id and transaction date.</p></li>
+<li><p>Restaurant and fast food having MCCcode: 5812 and 5814. These code are one column of transaction data.</p></li>
+<li><p>Restaurant and fast food store location can be found in transcation data.</p></li>
 </ol>
 </div>
 <div id="solution" class="section level2">
@@ -211,68 +208,279 @@ nrow(trans.dat)</code></pre>
 ##                    
 ##                    
 ## </code></pre>
-<pre class="{##}"><code>
+<pre class="r"><code>profile1 &lt;- read.csv('Data/April Vintage 2013.csv', stringsAsFactors = FALSE)
+profile2 &lt;- read.csv('Data/April Vintage 2013 _ page 2.csv', stringsAsFactors = FALSE)
+prof.dat &lt;- bind_rows(profile1, profile2)
+nrow(prof.dat)</code></pre>
+<pre><code>## [1] 173253</code></pre>
+<pre class="r"><code>head(prof.dat)</code></pre>
+<pre><code>##   DebtDimId AccountDimId  FDROpenDt DatePrevStmt StatementDt MOB ExtStatus
+## 1  24508718     65089656 04/02/2013         NULL  04/08/2013   0          
+## 2  24508718     65089656 04/02/2013   04/08/2013  05/09/2013   1          
+## 3  24508718     65089656 04/02/2013   05/09/2013  06/07/2013   2          
+## 4  24508718     65089656 04/02/2013   06/07/2013  07/09/2013   3          
+## 5  24508718     65089656 04/02/2013   07/09/2013  08/09/2013   4          
+## 6  24508718     65089656 04/02/2013   08/09/2013  09/08/2013   5          
+##   IntStatus DaysDeliq ActualMinPay OverlimitAmount DisplayMinPay
+## 1                   0           30               0            30
+## 2                   0           30               0            30
+## 3                   0           30               0            30
+## 4                   0           30               0            30
+## 5                   0           30               0            30
+## 6                   0           30               0            30
+##   OpeningBalance BillLateCharge EndingBalance CreditLimit TotalNetPayments
+## 1           0.00              0        180.00         300                0
+## 2         180.00              0        154.50         300               30
+## 3         154.50              0        159.74         300               30
+## 4         159.74              0        267.92         300               30
+## 5         267.92              0        245.81         300               30
+## 6         245.81              0        223.06         300               30
+##   TotalNetPurchaseAndCash TotalFeesBilled Concessions QuarterlyFicoScore
+## 1                    0.00            0.00           0                  0
+## 2                    0.00            4.50           0                536
+## 3                   19.58           15.66           0                536
+## 4                  130.00            8.18           0                536
+## 5                    0.00            7.89           0                536
+## 6                    0.00            7.25           0                515
+##   BehavScore                         City ZState State ZipCode X24856314
+## 1         11 NORTH LAS VEGAS                  NV    NV   89031        NA
+## 2        636 NORTH LAS VEGAS                  NV    NV   89031        NA
+## 3        639 NORTH LAS VEGAS                  NV    NV   89031        NA
+## 4        644 NORTH LAS VEGAS                  NV    NV   89031        NA
+## 5        648 NORTH LAS VEGAS                  NV    NV   89031        NA
+## 6        657 NORTH LAS VEGAS                  NV    NV   89031        NA
+##   X65742793 X04.18.2013 NULL. X04.21.2013 X0    X  X.1 X0.1 X30 X0.2 X30.1
+## 1        NA        &lt;NA&gt;  &lt;NA&gt;        &lt;NA&gt; NA &lt;NA&gt; &lt;NA&gt;   NA  NA   NA    NA
+## 2        NA        &lt;NA&gt;  &lt;NA&gt;        &lt;NA&gt; NA &lt;NA&gt; &lt;NA&gt;   NA  NA   NA    NA
+## 3        NA        &lt;NA&gt;  &lt;NA&gt;        &lt;NA&gt; NA &lt;NA&gt; &lt;NA&gt;   NA  NA   NA    NA
+## 4        NA        &lt;NA&gt;  &lt;NA&gt;        &lt;NA&gt; NA &lt;NA&gt; &lt;NA&gt;   NA  NA   NA    NA
+## 5        NA        &lt;NA&gt;  &lt;NA&gt;        &lt;NA&gt; NA &lt;NA&gt; &lt;NA&gt;   NA  NA   NA    NA
+## 6        NA        &lt;NA&gt;  &lt;NA&gt;        &lt;NA&gt; NA &lt;NA&gt; &lt;NA&gt;   NA  NA   NA    NA
+##   X0.3 X0.4 X100 X400 X0.5 X0.6 X0.7 X0.8 X0.9 X11 OXNARD   CA CA.1 X93032
+## 1   NA   NA   NA   NA   NA   NA   NA   NA   NA  NA   &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;     NA
+## 2   NA   NA   NA   NA   NA   NA   NA   NA   NA  NA   &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;     NA
+## 3   NA   NA   NA   NA   NA   NA   NA   NA   NA  NA   &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;     NA
+## 4   NA   NA   NA   NA   NA   NA   NA   NA   NA  NA   &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;     NA
+## 5   NA   NA   NA   NA   NA   NA   NA   NA   NA  NA   &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;     NA
+## 6   NA   NA   NA   NA   NA   NA   NA   NA   NA  NA   &lt;NA&gt; &lt;NA&gt; &lt;NA&gt;     NA</code></pre>
+<pre class="r"><code>summary(prof.dat)</code></pre>
+<pre><code>##    DebtDimId         AccountDimId       FDROpenDt        
+##  Min.   :24508718   Min.   :65089656   Length:173253     
+##  1st Qu.:24797902   1st Qu.:65639131   Class :character  
+##  Median :24817093   Median :65675029   Mode  :character  
+##  Mean   :24806966   Mean   :65711462                     
+##  3rd Qu.:24836872   3rd Qu.:65709823                     
+##  Max.   :24856301   Max.   :69639949                     
+##  NA's   :80623      NA's   :80623                        
+##  DatePrevStmt       StatementDt             MOB         ExtStatus        
+##  Length:173253      Length:173253      Min.   : 0.00   Length:173253     
+##  Class :character   Class :character   1st Qu.: 3.00   Class :character  
+##  Mode  :character   Mode  :character   Median : 7.00   Mode  :character  
+##                                        Mean   : 7.27                     
+##                                        3rd Qu.:12.00                     
+##                                        Max.   :17.00                     
+##                                        NA's   :80623                     
+##   IntStatus           DaysDeliq       ActualMinPay    OverlimitAmount  
+##  Length:173253      Min.   :  0.00   Min.   :   0.0   Min.   :   0.00  
+##  Class :character   1st Qu.:  0.00   1st Qu.:  30.0   1st Qu.:   0.00  
+##  Mode  :character   Median :  0.00   Median :  30.0   Median :   0.00  
+##                     Mean   : 25.54   Mean   :  63.2   Mean   :  28.39  
+##                     3rd Qu.: 30.00   3rd Qu.:  60.0   3rd Qu.:  30.19  
+##                     Max.   :390.00   Max.   :1237.0   Max.   :2199.63  
+##                     NA's   :80623    NA's   :80623    NA's   :80623    
+##  DisplayMinPay     OpeningBalance   BillLateCharge  EndingBalance   
+##  Min.   :-401.01   Min.   :-500.6   Min.   : 0.00   Min.   :-500.6  
+##  1st Qu.:  30.00   1st Qu.: 175.0   1st Qu.: 0.00   1st Qu.: 203.2  
+##  Median :  33.71   Median : 304.6   Median : 0.00   Median : 310.6  
+##  Mean   :  84.99   Mean   : 333.3   Mean   : 8.55   Mean   : 351.4  
+##  3rd Qu.:  90.00   3rd Qu.: 441.9   3rd Qu.:25.00   3rd Qu.: 455.9  
+##  Max.   :2374.63   Max.   :2499.6   Max.   :35.00   Max.   :2499.6  
+##  NA's   :80623     NA's   :80623    NA's   :80623   NA's   :80623   
+##   CreditLimit    TotalNetPayments  TotalNetPurchaseAndCash
+##  Min.   :  0.0   Min.   :-817.77   Min.   :-2007.74       
+##  1st Qu.:300.0   1st Qu.:   0.00   1st Qu.:    0.00       
+##  Median :300.0   Median :  30.00   Median :    0.00       
+##  Mean   :428.7   Mean   :  60.25   Mean   :   59.46       
+##  3rd Qu.:700.0   3rd Qu.:  68.97   3rd Qu.:   63.88       
+##  Max.   :900.0   Max.   :2770.07   Max.   : 2488.63       
+##  NA's   :80623   NA's   :80623     NA's   :80623          
+##  TotalFeesBilled    Concessions      QuarterlyFicoScore   BehavScore   
+##  Min.   :-359.35   Min.   :-607.87   Min.   :  0.0      Min.   : 11.0  
+##  1st Qu.:   5.90   1st Qu.:   0.00   1st Qu.:513.0      1st Qu.:556.0  
+##  Median :  15.05   Median :   0.00   Median :576.0      Median :624.0  
+##  Mean   :  22.31   Mean   :  -0.74   Mean   :521.2      Mean   :532.5  
+##  3rd Qu.:  38.55   3rd Qu.:   0.00   3rd Qu.:626.0      3rd Qu.:651.0  
+##  Max.   : 190.52   Max.   : 414.31   Max.   :798.0      Max.   :717.0  
+##  NA's   :80623     NA's   :80623     NA's   :80623      NA's   :80623  
+##      City              ZState             State              ZipCode     
+##  Length:173253      Length:173253      Length:173253      Min.   :  605  
+##  Class :character   Class :character   Class :character   1st Qu.:29102  
+##  Mode  :character   Mode  :character   Mode  :character   Median :46224  
+##                                                           Mean   :51290  
+##                                                           3rd Qu.:77703  
+##                                                           Max.   :99775  
+##                                                           NA's   :80623  
+##    X24856314          X65742793        X04.18.2013       
+##  Min.   :24856314   Min.   :65512291   Length:173253     
+##  1st Qu.:24865229   1st Qu.:65753728   Class :character  
+##  Median :24876408   Median :65772563   Mode  :character  
+##  Mean   :24876981   Mean   :65821277                     
+##  3rd Qu.:24887693   3rd Qu.:65793608                     
+##  Max.   :24901159   Max.   :69687240                     
+##  NA's   :132942     NA's   :132942                       
+##     NULL.           X04.21.2013              X0              X            
+##  Length:173253      Length:173253      Min.   : 0.00    Length:173253     
+##  Class :character   Class :character   1st Qu.: 3.00    Class :character  
+##  Mode  :character   Mode  :character   Median : 7.00    Mode  :character  
+##                                        Mean   : 7.82                      
+##                                        3rd Qu.:12.00                      
+##                                        Max.   :17.00                      
+##                                        NA's   :132942                     
+##      X.1                 X0.1             X30               X0.2        
+##  Length:173253      Min.   :  0.00   Min.   :   0.00   Min.   :   0.00  
+##  Class :character   1st Qu.:  0.00   1st Qu.:  30.00   1st Qu.:   0.00  
+##  Mode  :character   Median :  0.00   Median :  38.00   Median :   0.00  
+##                     Mean   : 20.16   Mean   :  63.86   Mean   :  25.18  
+##                     3rd Qu.: 30.00   3rd Qu.:  60.00   3rd Qu.:  15.25  
+##                     Max.   :390.00   Max.   :1219.00   Max.   :1430.43  
+##                     NA's   :132942   NA's   :132942    NA's   :132942   
+##      X30.1              X0.3             X0.4             X100       
+##  Min.   :   0.00   Min.   :-603.5   Min.   : 0.00    Min.   :-603.5  
+##  1st Qu.:  30.00   1st Qu.: 175.0   1st Qu.: 0.00    1st Qu.: 219.8  
+##  Median :  39.00   Median : 358.7   Median : 0.00    Median : 378.7  
+##  Mean   :  84.01   Mean   : 391.7   Mean   : 7.87    Mean   : 415.6  
+##  3rd Qu.:  72.77   3rd Qu.: 645.1   3rd Qu.:25.00    3rd Qu.: 656.5  
+##  Max.   :2130.43   Max.   :2130.4   Max.   :35.00    Max.   :2130.4  
+##  NA's   :132942    NA's   :132942   NA's   :132942   NA's   :132942  
+##       X400             X0.5              X0.6              X0.7        
+##  Min.   :  0.0    Min.   :-885.60   Min.   :-500.00   Min.   :-277.17  
+##  1st Qu.:300.0    1st Qu.:   0.00   1st Qu.:   0.00   1st Qu.:   6.84  
+##  Median :500.0    Median :  40.00   Median :   0.00   Median :  19.22  
+##  Mean   :520.3    Mean   :  66.19   Mean   :  66.05   Mean   :  24.20  
+##  3rd Qu.:700.0    3rd Qu.:  75.00   3rd Qu.:  68.97   3rd Qu.:  38.88  
+##  Max.   :900.0    Max.   :1994.14   Max.   :1683.99   Max.   : 208.95  
+##  NA's   :132942   NA's   :132942    NA's   :132942    NA's   :132942   
+##       X0.8              X0.9             X11            OXNARD         
+##  Min.   :-379.71   Min.   :  0.0    Min.   : 11.0    Length:173253     
+##  1st Qu.:   0.00   1st Qu.:538.0    1st Qu.:586.0    Class :character  
+##  Median :   0.00   Median :598.0    Median :633.0    Mode  :character  
+##  Mean   :  -0.73   Mean   :553.4    Mean   :552.4                      
+##  3rd Qu.:   0.00   3rd Qu.:640.0    3rd Qu.:655.0                      
+##  Max.   : 246.40   Max.   :791.0    Max.   :715.0                      
+##  NA's   :132942    NA's   :132942   NA's   :132942                     
+##       CA                CA.1               X93032      
+##  Length:173253      Length:173253      Min.   :  683   
+##  Class :character   Class :character   1st Qu.:27616   
+##  Mode  :character   Mode  :character   Median :44504   
+##                                        Mean   :49464   
+##                                        3rd Qu.:77063   
+##                                        Max.   :99802   
+##                                        NA's   :132942</code></pre>
+<pre class="r"><code>rm(trans1, trans2, trans3, trans4, profile1, profile2)</code></pre>
+</div>
+<div id="table-1-id-datestart-end-home-state" class="section level3">
+<h3>2. Table 1: Id, Date(start, end), Home state</h3>
+<p>Replace NULL DatePrevStmt by FDROpenDt if it is the first record. Replace NULL DatePrevStmt by StatementDt - 30 if it is not the first record</p>
+<pre class="r"><code>temp &lt;- prof.dat
+idx &lt;- which(( is.na(temp$DatePrevStmt) | temp$DatePrevStmt == 'NULL' ) &amp; temp$MOB == 0)
+temp[idx,]$DatePrevStmt &lt;- temp[idx,]$FDROpenDt
 
-&lt;!-- ### 2. Find all utility transaction --&gt;
+idx &lt;- which(is.na(temp$DatePrevStmt) | temp$DatePrevStmt == 'NULL')
+temp[idx,]$DatePrevStmt &lt;- as.character( as.Date(temp[idx,]$StatementDt, &quot;%m/%d/%Y&quot;) - 30 )
 
-&lt;!-- ```{r} --&gt;
-&lt;!-- trans.dat.util &lt;- trans.dat[which(trans.dat$MCCcode == 4900),] --&gt;
+prof.PrevStmt.fix &lt;- temp
+rm(temp)</code></pre>
+<p>Group user profile data by : Id, State</p>
+<pre class="r"><code>temp &lt;- prof.PrevStmt.fix %&gt;%
+  group_by(DebtDimId, State) %&gt;%
+  summarise(StartDay = min(as.Date(DatePrevStmt, &quot;%m/%d/%Y&quot; )),
+          EndDay = max(as.Date(StatementDt, &quot;%m/%d/%Y&quot;))) %&gt;%
+  select(one_of(c('DebtDimId','State', 'StartDay', 'EndDay')))
 
-&lt;!-- nrow(trans.dat.util) --&gt;
-&lt;!-- head(trans.dat.util) --&gt;
-&lt;!-- summary(trans.dat.util) --&gt;
+length(unique(prof.dat$DebtDimId))</code></pre>
+<pre><code>## [1] 7039</code></pre>
+<pre class="r"><code>nrow(temp)</code></pre>
+<pre><code>## [1] 7273</code></pre>
+<pre class="r"><code>tbl.Member.HomeState &lt;- temp
+rm(temp, prof.PrevStmt.fix)</code></pre>
+</div>
+<div id="table-2-debtdimid-restaurant-name-locate-state-transdate" class="section level3">
+<h3>3. Table 2: DebtDimId, Restaurant name, Locate State, TransDate</h3>
+<p>All transaction with MCCcode: 5812 or 5814</p>
+<pre class="r"><code>temp &lt;- trans.dat[which(trans.dat$MCCcode==5812 | trans.dat$MCCcode==5814),]</code></pre>
+<p>Remove transactions in which FDRMerchDescr contains phone number</p>
+<pre class="r"><code>phone.reg.pattern = '\\s*(?:\\+?(\\d{1,3}))?[- (]*(\\d{3})[- )]*(\\d{3})[- ]*(\\d{4})(?: *[x/#]{1}(\\d+))?\\s*'
+idx &lt;- grep(phone.reg.pattern, temp$FDRMerchDescr)
+if(length(idx) != 0)
+{
+  temp &lt;- temp[-idx,]  
+}
 
-&lt;!-- member.list.util &lt;- trans.dat.util$DebtDimId --&gt;
+rm(phone.reg.pattern, idx)</code></pre>
+<p>Get State code from FDRMerchDescr</p>
+<pre class="r"><code>state.reg.pattern = '[[:alpha:]]{2}$'
+store.loc &lt;- str_extract(temp$FDRMerchDescr, state.reg.pattern)
+rm(state.reg.pattern)</code></pre>
+<p>Store Name 1: FDRMerchDescr - Remove city and state</p>
+<pre class="r"><code>store.name &lt;- temp$FDRMerchDescr
+tbDelete.reg.pattern = '[[:space:]]*[[:alpha:]]{2,} [[:alpha:]]{2}$'
+store.name &lt;- gsub(tbDelete.reg.pattern, '', store.name)</code></pre>
+<p>Store Name 2: Remove string after two space (or more)</p>
+<pre class="r"><code>tbDelete.reg.pattern = '[[:space:]]*\\s{2,}[[:print:]]*$'
+store.name &lt;- gsub(tbDelete.reg.pattern, '', store.name)</code></pre>
+<p>Store Name 3: Remove string after digit</p>
+<pre class="r"><code>tbDelete.reg.pattern = '[[:space:]]*[[:alpha:]]*\\d+[[:print:]]*$'
+store.name &lt;- gsub(tbDelete.reg.pattern, '', store.name)</code></pre>
+<p>Store Name 4: Remove string after #</p>
+<pre class="r"><code>tbDelete.reg.pattern = '[[:space:]]*#[[:print:]]*$'
+store.name &lt;- gsub(tbDelete.reg.pattern, '', store.name)</code></pre>
+<p>Store Name 5: Remove string after @</p>
+<pre class="r"><code>tbDelete.reg.pattern = '[[:space:]]*@[[:print:]]*$'
+store.name &lt;- gsub(tbDelete.reg.pattern, '', store.name)</code></pre>
+<p>Store Name 6: Remove string after -</p>
+<pre class="r"><code>tbDelete.reg.pattern = '[[:space:]]*-[[:print:]]*$'
+store.name &lt;- gsub(tbDelete.reg.pattern, '', store.name)</code></pre>
+<p>Bind member id, transaction day, store name, store loc</p>
+<pre class="r"><code>member.id &lt;- temp$DebtDimId
+transaction.Day &lt;- temp$TimeDimDt
+tbl.clean.trans &lt;- cbind( cbind(member.id, transaction.Day), cbind(store.name, store.loc) )
 
-&lt;!-- ``` --&gt;
-
-&lt;!-- ### 3. Figure out which state the user is living in --&gt;
-
-&lt;!-- Here I suggest using fast food/restaurant to figure out where the member are living in.  --&gt;
-
-&lt;!-- If we cannot find any fast food/restaurant record, we then move to durg store/pharmacies.  --&gt;
-
-&lt;!-- The third one we will try to use (if above two cannot give us the answer), is gas station. (Note: there are 2 different MCCcode for fuel supply, one of them is auto fuel only: 5542, the other one is Fuel Dealers – Coal, Fuel Oil, Liquefied Petroleum, Wood: 5983) --&gt;
-
-&lt;!-- If still not, we will report how many we are failed to be located. --&gt;
-
-&lt;!-- Bias? Yes. If someone never eat outside if they could cook (at home), however, they eat fast food when they are traveling. Then, the address of this member will be miss classified. --&gt;
-
-
-&lt;!-- #### restaurant and fast food having MCCcode: 5812 and 5814 --&gt;
-&lt;!-- ```{r} --&gt;
-&lt;!-- trans.dat.food &lt;- trans.dat[which(trans.dat$MCCcode == 5812 | trans.dat$MCCcode == 5814 ),] --&gt;
-
-&lt;!-- member.not.in.food &lt;- member.list.util[which(!( member.list.util %in% trans.dat.food$DebtDimId) )] --&gt;
-
-&lt;!-- length(member.not.in.food) --&gt;
-&lt;!-- ``` --&gt;
-
-&lt;!-- In 873 members, we have 224 member has no food record. --&gt;
-
-&lt;!-- #### durg store or pharmacies MCCcode: 5912 --&gt;
-&lt;!-- ```{r} --&gt;
-&lt;!-- trans.dat.drug &lt;- trans.dat[which(trans.dat$MCCcode == 5912 ),] --&gt;
-
-&lt;!-- member.not.in.durg.either &lt;- member.not.in.food[which(!( member.not.in.food %in% trans.dat.drug$DebtDimId) )] --&gt;
-
-&lt;!-- length(member.not.in.durg.either) --&gt;
-&lt;!-- ``` --&gt;
-
-&lt;!-- In 224 unkown member, 170 has no durg record. --&gt;
-
-&lt;!-- #### Automated Fuel Dispenser MCCcode: 5542 --&gt;
-
-&lt;!-- ```{r} --&gt;
-&lt;!-- trans.dat.fuel &lt;- trans.dat[which(trans.dat$MCCcode == 5542 ),] --&gt;
-
-&lt;!-- member.not.located &lt;- member.not.in.durg.either[which(!( member.not.in.durg.either %in% trans.dat.fuel$DebtDimId) )] --&gt;
-
-&lt;!-- length(member.not.located) --&gt;
-&lt;!-- ``` --&gt;
-
-&lt;!-- After 3 different tech, we still have 109 member cannot be located.  --&gt;
-</code></pre>
+rm(member.id, transaction.Day, store.name, store.loc)</code></pre>
+<!-- ### 2. Find all utility transaction -->
+<!-- ```{r} -->
+<!-- trans.dat.util <- trans.dat[which(trans.dat$MCCcode == 4900),] -->
+<!-- nrow(trans.dat.util) -->
+<!-- head(trans.dat.util) -->
+<!-- summary(trans.dat.util) -->
+<!-- member.list.util <- trans.dat.util$DebtDimId -->
+<!-- ``` -->
+<!-- ### 3. Figure out which state the user is living in -->
+<!-- Here I suggest using fast food/restaurant to figure out where the member are living in.  -->
+<!-- If we cannot find any fast food/restaurant record, we then move to durg store/pharmacies.  -->
+<!-- The third one we will try to use (if above two cannot give us the answer), is gas station. (Note: there are 2 different MCCcode for fuel supply, one of them is auto fuel only: 5542, the other one is Fuel Dealers – Coal, Fuel Oil, Liquefied Petroleum, Wood: 5983) -->
+<!-- If still not, we will report how many we are failed to be located. -->
+<!-- Bias? Yes. If someone never eat outside if they could cook (at home), however, they eat fast food when they are traveling. Then, the address of this member will be miss classified. -->
+<!-- #### restaurant and fast food having MCCcode: 5812 and 5814 -->
+<!-- ```{r} -->
+<!-- trans.dat.food <- trans.dat[which(trans.dat$MCCcode == 5812 | trans.dat$MCCcode == 5814 ),] -->
+<!-- member.not.in.food <- member.list.util[which(!( member.list.util %in% trans.dat.food$DebtDimId) )] -->
+<!-- length(member.not.in.food) -->
+<!-- ``` -->
+<!-- In 873 members, we have 224 member has no food record. -->
+<!-- #### durg store or pharmacies MCCcode: 5912 -->
+<!-- ```{r} -->
+<!-- trans.dat.drug <- trans.dat[which(trans.dat$MCCcode == 5912 ),] -->
+<!-- member.not.in.durg.either <- member.not.in.food[which(!( member.not.in.food %in% trans.dat.drug$DebtDimId) )] -->
+<!-- length(member.not.in.durg.either) -->
+<!-- ``` -->
+<!-- In 224 unkown member, 170 has no durg record. -->
+<!-- #### Automated Fuel Dispenser MCCcode: 5542 -->
+<!-- ```{r} -->
+<!-- trans.dat.fuel <- trans.dat[which(trans.dat$MCCcode == 5542 ),] -->
+<!-- member.not.located <- member.not.in.durg.either[which(!( member.not.in.durg.either %in% trans.dat.fuel$DebtDimId) )] -->
+<!-- length(member.not.located) -->
+<!-- ``` -->
+<!-- After 3 different tech, we still have 109 member cannot be located.  -->
 </div>
 </div>
 
