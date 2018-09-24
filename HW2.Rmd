@@ -10,19 +10,23 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 ```
 
-# Question:
-1. In each state, which utility company supplies most of our custom? 
-2. If we want money back from utility companies, which one will be the best target?
+## Question:
+
+When our member travel between different states, which fast food/restaurant is most popular ? 
 
 Note:
-1. Utilities – Electric, Gas, Water, Sanitary Fees has a unique MCCcode: 4900.
-2. These utility bills often go with a 800 number and address. As we being told in class, the address is the company address, not the user address.
-3. We also make an assumption that, the utility are paid together in one transaction. (This may not true, but it could simplify the question)
 
+1. Member home location can be found in member profile. It is changing overtime. 
+So, when matching transaction with member profile, we need match by both member Id and transaction date.
 
-# Solution:
+2. Restaurant and fast food having MCCcode: 5812 and 5814. These code are one column of transaction data.
 
-## 1. Load data from file:
+3. Restaurant and fast food store location can be found in transcation data.
+
+## Solution:
+
+### 1. Load data from file:
+
 ```{r}
 trans1 <- read.csv('Data/April Vintage Transactions page 1.csv', stringsAsFactors=FALSE)
 trans2 <- read.csv('Data/April Vintage Transactions page 2.csv', stringsAsFactors=FALSE)
@@ -37,69 +41,122 @@ nrow(trans.dat)
 head(trans.dat)
 summary(trans.dat)
 
+profile1 <- read.csv('Data/April Vintage 2013.csv', stringsAsFactors = FALSE)
+profile2 <- read.csv('Data/April Vintage 2013 _ page 2.csv', stringsAsFactors = FALSE)
+prof.dat <- bind_rows(profile1, profile2)
+nrow(prof.dat)
+head(prof.dat)
+summary(prof.dat)
+
+
+rm(trans1, trans2, trans3, trans4, profile1, profile2)
 ```
 
-## 2. Find all utility transaction
+### 2. Table 1: Id, Date(start, end), Home state
 
+Replace NULL DatePrevStmt by FDROpenDt if it is the first record. 
+Replace NULL DatePrevStmt by StatementDt - 30 if it is not the first record
 ```{r}
-trans.dat.util <- trans.dat[which(trans.dat$MCCcode == 4900),]
+temp <- prof.dat
+idx <- which(( is.na(temp$DatePrevStmt) | temp$DatePrevStmt == 'NULL' ) & temp$MOB == 0)
+temp[idx,]$DatePrevStmt <- temp[idx,]$FDROpenDt
 
-nrow(trans.dat.util)
-head(trans.dat.util)
-summary(trans.dat.util)
+idx <- which(is.na(temp$DatePrevStmt) | temp$DatePrevStmt == 'NULL')
+temp[idx,]$DatePrevStmt <- as.character( as.Date(temp[idx,]$StatementDt, "%m/%d/%Y") - 30 )
 
-member.list.util <- trans.dat.util$DebtDimId
-
+prof.PrevStmt.fix <- temp
+rm(temp)
 ```
 
-## 3. Figure out which state the user is living in
-Here I suggest using fast food/restaurant to figure out where the member are living in. 
 
-If we cannot find any fast food/restaurant record, we then move to durg store/pharmacies. 
-
-The third one we will try to use (if above two cannot give us the answer), is gas station. (Note: there are 2 different MCCcode for fuel supply, one of them is auto fuel only: 5542, the other one is Fuel Dealers – Coal, Fuel Oil, Liquefied Petroleum, Wood: 5983)
-
-If still not, we will report how many we are failed to be located.
-
-Bias? Yes. If someone never eat outside if they could cook (at home), however, they eat fast food when they are traveling. Then, the address of this member will be miss classified.
-
-
-### restaurant and fast food having MCCcode: 5812 and 5814
+Group user profile data by : Id, State
 ```{r}
-trans.dat.food <- trans.dat[which(trans.dat$MCCcode == 5812 | trans.dat$MCCcode == 5814 ),]
+temp <- prof.PrevStmt.fix %>%
+  group_by(DebtDimId, State) %>%
+  summarise(StartDay = min(as.Date(DatePrevStmt, "%m/%d/%Y" )),
+          EndDay = max(as.Date(StatementDt, "%m/%d/%Y"))) %>%
+  select(one_of(c('DebtDimId','State', 'StartDay', 'EndDay')))
 
-member.not.in.food <- member.list.util[which(!( member.list.util %in% trans.dat.food$DebtDimId) )]
+length(unique(prof.dat$DebtDimId))
 
-length(member.not.in.food)
+nrow(temp)
+
+tbl.Member.HomeState <- temp
+rm(temp, prof.PrevStmt.fix)
+
 ```
 
-In 873 members, we have 224 member has no food record.
- 
-### durg store or pharmacies MCCcode: 5912
-```{r}
-trans.dat.drug <- trans.dat[which(trans.dat$MCCcode == 5912 ),]
-
-member.not.in.durg.either <- member.not.in.food[which(!( member.not.in.food %in% trans.dat.drug$DebtDimId) )]
-
-length(member.not.in.durg.either)
-```
-
-In 224 unkown member, 170 has no durg record.
-
-### Automated Fuel Dispenser
-
-```{r}
-trans.dat.fuel <- trans.dat[which(trans.dat$MCCcode == 5542 ),]
-
-member.not.located <- member.not.in.durg.either[which(!( member.not.in.durg.either %in% trans.dat.fuel$DebtDimId) )]
-
-length(member.not.located)
-```
-
-After 3 different tech, we still have 109 member cannot be located. 
+### 3. Table 2: 
 
 
 
+
+
+
+
+
+
+
+
+<!-- ### 2. Find all utility transaction -->
+
+<!-- ```{r} -->
+<!-- trans.dat.util <- trans.dat[which(trans.dat$MCCcode == 4900),] -->
+
+<!-- nrow(trans.dat.util) -->
+<!-- head(trans.dat.util) -->
+<!-- summary(trans.dat.util) -->
+
+<!-- member.list.util <- trans.dat.util$DebtDimId -->
+
+<!-- ``` -->
+
+<!-- ### 3. Figure out which state the user is living in -->
+
+<!-- Here I suggest using fast food/restaurant to figure out where the member are living in.  -->
+
+<!-- If we cannot find any fast food/restaurant record, we then move to durg store/pharmacies.  -->
+
+<!-- The third one we will try to use (if above two cannot give us the answer), is gas station. (Note: there are 2 different MCCcode for fuel supply, one of them is auto fuel only: 5542, the other one is Fuel Dealers – Coal, Fuel Oil, Liquefied Petroleum, Wood: 5983) -->
+
+<!-- If still not, we will report how many we are failed to be located. -->
+
+<!-- Bias? Yes. If someone never eat outside if they could cook (at home), however, they eat fast food when they are traveling. Then, the address of this member will be miss classified. -->
+
+
+<!-- #### restaurant and fast food having MCCcode: 5812 and 5814 -->
+<!-- ```{r} -->
+<!-- trans.dat.food <- trans.dat[which(trans.dat$MCCcode == 5812 | trans.dat$MCCcode == 5814 ),] -->
+
+<!-- member.not.in.food <- member.list.util[which(!( member.list.util %in% trans.dat.food$DebtDimId) )] -->
+
+<!-- length(member.not.in.food) -->
+<!-- ``` -->
+
+<!-- In 873 members, we have 224 member has no food record. -->
+
+<!-- #### durg store or pharmacies MCCcode: 5912 -->
+<!-- ```{r} -->
+<!-- trans.dat.drug <- trans.dat[which(trans.dat$MCCcode == 5912 ),] -->
+
+<!-- member.not.in.durg.either <- member.not.in.food[which(!( member.not.in.food %in% trans.dat.drug$DebtDimId) )] -->
+
+<!-- length(member.not.in.durg.either) -->
+<!-- ``` -->
+
+<!-- In 224 unkown member, 170 has no durg record. -->
+
+<!-- #### Automated Fuel Dispenser MCCcode: 5542 -->
+
+<!-- ```{r} -->
+<!-- trans.dat.fuel <- trans.dat[which(trans.dat$MCCcode == 5542 ),] -->
+
+<!-- member.not.located <- member.not.in.durg.either[which(!( member.not.in.durg.either %in% trans.dat.fuel$DebtDimId) )] -->
+
+<!-- length(member.not.located) -->
+<!-- ``` -->
+
+<!-- After 3 different tech, we still have 109 member cannot be located.  -->
 
 
 
