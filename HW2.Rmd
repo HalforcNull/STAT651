@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
+library(stringr)
 ```
 
 ## Question:
@@ -84,13 +85,81 @@ nrow(temp)
 tbl.Member.HomeState <- temp
 rm(temp, prof.PrevStmt.fix)
 
+
 ```
 
-### 3. Table 2: 
+### 3. Table 2: DebtDimId, Restaurant name, Locate State, TransDate
 
+All transaction with MCCcode: 5812 or 5814 
+```{r}
+temp <- trans.dat[which(trans.dat$MCCcode==5812 | trans.dat$MCCcode==5814),]
 
+```
 
+Remove transactions in which FDRMerchDescr contains phone number
+```{r}
+phone.reg.pattern = '\\s*(?:\\+?(\\d{1,3}))?[- (]*(\\d{3})[- )]*(\\d{3})[- ]*(\\d{4})(?: *[x/#]{1}(\\d+))?\\s*'
+idx <- grep(phone.reg.pattern, temp$FDRMerchDescr)
+if(length(idx) != 0)
+{
+  temp <- temp[-idx,]  
+}
 
+rm(phone.reg.pattern, idx)
+```
+
+Get State code from FDRMerchDescr
+```{r}
+state.reg.pattern = '[[:alpha:]]{2}$'
+store.loc <- str_extract(temp$FDRMerchDescr, state.reg.pattern)
+rm(state.reg.pattern)
+```
+
+Store Name 1: FDRMerchDescr - Remove city and state
+```{r}
+store.name <- temp$FDRMerchDescr
+tbDelete.reg.pattern = '[[:space:]]*[[:alpha:]]{2,} [[:alpha:]]{2}$'
+store.name <- gsub(tbDelete.reg.pattern, '', store.name)
+```
+
+Store Name 2: Remove string after two space (or more)
+```{r}
+tbDelete.reg.pattern = '[[:space:]]*\\s{2,}[[:print:]]*$'
+store.name <- gsub(tbDelete.reg.pattern, '', store.name)
+```
+
+Store Name 3: Remove string after digit
+```{r}
+tbDelete.reg.pattern = '[[:space:]]*[[:alpha:]]*\\d+[[:print:]]*$'
+store.name <- gsub(tbDelete.reg.pattern, '', store.name)
+```
+
+Store Name 4: Remove string after #
+```{r}
+tbDelete.reg.pattern = '[[:space:]]*#[[:print:]]*$'
+store.name <- gsub(tbDelete.reg.pattern, '', store.name)
+```
+
+Store Name 5: Remove string after @
+```{r}
+tbDelete.reg.pattern = '[[:space:]]*@[[:print:]]*$'
+store.name <- gsub(tbDelete.reg.pattern, '', store.name)
+```
+
+Store Name 6: Remove string after -
+```{r}
+tbDelete.reg.pattern = '[[:space:]]*-[[:print:]]*$'
+store.name <- gsub(tbDelete.reg.pattern, '', store.name)
+```
+
+Bind member id, transaction day, store name, store loc
+```{r}
+member.id <- temp$DebtDimId
+transaction.Day <- temp$TimeDimDt
+tbl.clean.trans <- cbind( cbind(member.id, transaction.Day), cbind(store.name, store.loc) )
+
+rm(member.id, transaction.Day, store.name, store.loc)
+```
 
 
 
