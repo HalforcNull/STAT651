@@ -165,13 +165,32 @@ rm(member.id, transaction.Day, store.name, store.loc)
 4. Fill Home state into transaction table
 ```{r}
 HomeState <- NULL
+MissingList <- NULL
+DuplicateList <- NULL
 for(i in 1:nrow(tbl.clean.trans)){
-  transId <- tbl.clean.trans$transaction.Day[i]
-  transDay <- as.Date(tbl.clean.trans$member.id[i], "%m/%d/%Y")
-  HS <- tbl.Member.HomeState %>%
-    filter(DebtDimId == transId & StartDay <= transDay & EndDay >= transDay) %>%
-    select(State)
-  HomeState <- c(HomeState, HS)
+  transId <- tbl.clean.trans$member.id[i]
+  transDay <- as.Date(tbl.clean.trans$transaction.Day[i], "%m/%d/%Y")
+  # Id.Idx <- which(tbl.Member.HomeState$DebtDimId == transId)
+  # StartDay.Idx <- which(tbl.Member.HomeState$StartDay <= transDay)
+  # EndDay.Idx <- which(tbl.Member.HomeState$EndDay >= transDay)
+  #   
+  # s <-Id.Idx[which(Id.Idx %in% StartDay.Idx &
+  #                    Id.Idx %in% EndDay.Idx)]
+  
+  Hs.Idx <- which(  tbl.Member.HomeState$DebtDimId == transId &
+                    tbl.Member.HomeState$StartDay <= transDay &
+                    tbl.Member.HomeState$EndDay >= transDay)
+  if(is.null(Hs.Idx) | length(Hs.Idx) == 0){
+    MissingList <- c(MissingList, i)
+    next
+  }
+  
+  if(length(Hs.Idx) > 1){
+    DuplicateList <- c(DuplicateList, i)
+    next
+  }
+  
+  HomeState <- c(HomeState, Hs.Idx)
 }
 
 
