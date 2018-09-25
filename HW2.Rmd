@@ -182,19 +182,21 @@ for(i in 1:nrow(tbl.clean.trans)){
                     tbl.Member.HomeState$EndDay >= transDay)
   if(is.null(Hs.Idx) | length(Hs.Idx) == 0){
     MissingList <- c(MissingList, i)
+    HomeState <- c(HomeState, -1)
     next
   }
   
   if(length(Hs.Idx) > 1){
     DuplicateList <- c(DuplicateList, i)
+    HomeState <- c(HomeState, -1)
     next
   }
   
   HomeState <- c(HomeState, Hs.Idx)
 }
-
-
-
+length(MissingList)
+length(DuplicateList)
+length(HomeState)
 
 ```
 <!-- ### 2. Find all utility transaction -->
