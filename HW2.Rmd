@@ -55,15 +55,20 @@ rm(trans1, trans2, trans3, trans4, profile1, profile2)
 
 ### 2. Table 1: Id, Date(start, end), Home state
 
+remove record without DebtDimId data
+```{r}
+temp <- prof.dat[-which(is.na(prof.dat$DebtDimId)),]
+```
+
 Replace NULL DatePrevStmt by FDROpenDt if it is the first record. 
 Replace NULL DatePrevStmt by StatementDt - 30 if it is not the first record
 ```{r}
-temp <- prof.dat
-idx <- which(( is.na(temp$DatePrevStmt) | temp$DatePrevStmt == 'NULL' ) & temp$MOB == 0)
+
+idx <- which(( is.na(temp$DatePrevStmt) | temp$DatePrevStmt == 'NULL') & temp$MOB == 0)
 temp[idx,]$DatePrevStmt <- temp[idx,]$FDROpenDt
 
-idx <- which(is.na(temp$DatePrevStmt) | temp$DatePrevStmt == 'NULL')
-temp[idx,]$DatePrevStmt <- as.character( as.Date(temp[idx,]$StatementDt, "%m/%d/%Y") - 30 )
+idx <- which(is.na(temp$DatePrevStmt) | temp$DatePrevStmt == 'NULL' )
+temp[idx,]$DatePrevStmt <- format( as.Date(temp[idx,]$StatementDt, "%m/%d/%Y") - 30, format="%m/%d/%Y")
 
 prof.PrevStmt.fix <- temp
 rm(temp)
