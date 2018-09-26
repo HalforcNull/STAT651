@@ -9,11 +9,12 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(stringr)
+library(plotly)
 ```
 
 ## Question:
 
-When our member travel between different states, which fast food/restaurant is most popular ? 
+When our member traveling between different states (or country), which fast food/restaurant is most popular ? 
 
 Note:
 
@@ -25,6 +26,10 @@ So, when matching transaction with member profile, we need match by both member 
 3. Restaurant and fast food store location can be found in transcation data.
 
 ## Solution:
+
+Find all fast food/restaurant transaction that happens in a different state compare with the state of bill( statement ) in that month.
+
+Summarize the fast food/restaurant by their names.
 
 ### 1. Load data from file:
 
@@ -117,7 +122,9 @@ Get State code from FDRMerchDescr
 ```{r}
 state.reg.pattern = '[[:alpha:]]{2}$'
 store.loc <- str_extract(temp$FDRMerchDescr, state.reg.pattern)
-rm(state.reg.pattern)
+idx.incorrect.loc <- which(! (store.loc %in% state.abb))
+store.loc[idx.incorrect.loc] <- -1
+rm(state.reg.pattern, idx.incorrect.loc)
 ```
 
 Store Name 1: FDRMerchDescr - Remove city and state
@@ -129,7 +136,7 @@ store.name <- gsub(tbDelete.reg.pattern, '', store.name)
 
 Store Name 2: Remove string after two space (or more)
 ```{r}
-tbDelete.reg.pattern = '[[:space:]]*\\s{2,}[[:print:]]*$'
+tbDelete.reg.pattern = '[[:space:]]{2,}[[:print:]]*$'
 store.name <- gsub(tbDelete.reg.pattern, '', store.name)
 ```
 
@@ -157,6 +164,14 @@ tbDelete.reg.pattern = '[[:space:]]*-[[:print:]]*$'
 store.name <- gsub(tbDelete.reg.pattern, '', store.name)
 ```
 
+Store Name 7: Remove all non alpha beta charactor 
+
+This can solve the difference between 'Wendy's' and 'Wendy s'
+```{r}
+tbDelete.reg.pattern = '[[:punct:][:space:]]*'
+store.name <- gsub(tbDelete.reg.pattern, '', store.name)
+```
+
 Bind member id, transaction day, store name, store loc
 ```{r}
 member.id <- temp$DebtDimId
@@ -167,7 +182,7 @@ rm(member.id, transaction.Day, store.name, store.loc)
 ```
 
 
-4. Fill Home state into transaction table
+### 4. Fill Home state into transaction table
 ```{r}
 HomeState <- NULL
 MissingList <- NULL
@@ -187,23 +202,69 @@ for(i in 1:nrow(tbl.clean.trans)){
                     tbl.Member.HomeState$EndDay >= transDay)
   if(is.null(Hs.Idx) | length(Hs.Idx) == 0){
     MissingList <- c(MissingList, i)
-    HomeState <- c(HomeState, -1)
+    HomeState <- c(HomeState, 'MISS')
     next
   }
   
   if(length(Hs.Idx) > 1){
     DuplicateList <- c(DuplicateList, i)
-    HomeState <- c(HomeState, -1)
+    HomeState <- c(HomeState, 'DUPLICATE')
     next
   }
   
-  HomeState <- c(HomeState, Hs.Idx)
+  HomeState <- c(HomeState, tbl.Member.HomeState$State[Hs.Idx])
 }
 length(MissingList)
 length(DuplicateList)
 length(HomeState)
 
 ```
+
+
+### 5. Find out the transation which happens in a state different with the home state
+```{r}
+tmp.dat <- cbind(tbl.clean.trans, HomeState)
+
+trans.idx <- which( tmp.dat$HomeState != 'MISS' &
+                    tmp.dat$HomeState != 'DUPLICATE' &
+                   # tmp.dat$store.loc != "NULL" &
+                    as.character(tmp.dat$HomeState) != as.character(tmp.dat$store.loc))
+rm(tmp.dat)
+```
+
+### 6. Using store name to calculate the popular rate
+
+All stores show up:
+```{r}
+visited.stores <- tbl.clean.trans[trans.idx, ]
+
+plot_ly(visited.stores, labels = ~store.name, type='pie')
+
+```
+
+Remove the store names which shows less than ten times.
+
+```{r}
+
+tmp.tbl.store.shows.at.least.ten <- visited.stores %>% 
+  group_by(store.name) %>%
+  summarise(store.show.feq = n()) %>%
+  filter(store.show.feq >= 10) %>%
+  select(store.name, store.show.feq )
+
+plot_ly(tmp.tbl.store.shows.at.least.ten, labels = ~store.name, values= ~store.show.feq,textinfo = 'label+percent', type='pie')
+
+```
+
+## Answer:
+
+MC Donalds is the most popular restaunt when people traveling out their state.
+
+
+
+
+     
+
 <!-- ### 2. Find all utility transaction -->
 
 <!-- ```{r} -->
