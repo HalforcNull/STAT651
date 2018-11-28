@@ -61,12 +61,14 @@ rm(trans1, trans2, trans3, trans4, profile1, profile2)
 ### 2. Table 1: Id, Date(start, end), Home state
 
 remove record without DebtDimId data
+
 ```{r}
 temp <- prof.dat[-which(is.na(prof.dat$DebtDimId)),]
 ```
 
 Replace NULL DatePrevStmt by FDROpenDt if it is the first record. 
 Replace NULL DatePrevStmt by StatementDt - 30 if it is not the first record
+
 ```{r}
 
 idx <- which(( is.na(temp$DatePrevStmt) | temp$DatePrevStmt == 'NULL') & temp$MOB == 0)
@@ -81,6 +83,7 @@ rm(temp)
 
 
 Group user profile data by : Id, State
+
 ```{r}
 temp <- prof.PrevStmt.fix %>%
   group_by(DebtDimId, State) %>%
@@ -101,12 +104,14 @@ rm(temp, prof.PrevStmt.fix)
 ### 3. Table 2: DebtDimId, Restaurant name, Locate State, TransDate
 
 All transaction with MCCcode: 5812 or 5814 
+
 ```{r}
 temp <- trans.dat[which(trans.dat$MCCcode==5812 | trans.dat$MCCcode==5814),]
 
 ```
 
 Remove transactions in which FDRMerchDescr contains phone number
+
 ```{r}
 phone.reg.pattern = '\\s*(?:\\+?(\\d{1,3}))?[- (]*(\\d{3})[- )]*(\\d{3})[- ]*(\\d{4})(?: *[x/#]{1}(\\d+))?\\s*'
 idx <- grep(phone.reg.pattern, temp$FDRMerchDescr)
@@ -119,6 +124,7 @@ rm(phone.reg.pattern, idx)
 ```
 
 Get State code from FDRMerchDescr
+
 ```{r}
 state.reg.pattern = '[[:alpha:]]{2}$'
 store.loc <- str_extract(temp$FDRMerchDescr, state.reg.pattern)
@@ -128,6 +134,7 @@ rm(state.reg.pattern, idx.incorrect.loc)
 ```
 
 Store Name 1: FDRMerchDescr - Remove city and state
+
 ```{r}
 store.name <- temp$FDRMerchDescr
 tbDelete.reg.pattern = '[[:space:]]*[[:alpha:]]{2,} [[:alpha:]]{2}$'
@@ -135,6 +142,7 @@ store.name <- gsub(tbDelete.reg.pattern, '', store.name)
 ```
 
 Store Name 2: Remove string after two space (or more)
+
 ```{r}
 tbDelete.reg.pattern = '[[:space:]]{2,}[[:print:]]*$'
 store.name <- gsub(tbDelete.reg.pattern, '', store.name)
