@@ -1,0 +1,67 @@
+---
+title: "Homework 2 Part 1. Predict First Payment Default using first two week transaction"
+author: "Runan Yao"
+date: "November 22, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(stringr)
+library(plotly)
+```
+
+## Question we want to solve:
+
+Given first two weeks' transactions, can we able to perdict a custom will have First Payment Default issue or not?
+
+1. First two weeks' transactions:
+
+2. First Payment Default:
+
+
+
+
+### 1. Load data from file:
+
+```{r}
+trans1 <- read.csv('Data/April Vintage Transactions page 1.csv', stringsAsFactors=FALSE)
+trans2 <- read.csv('Data/April Vintage Transactions page 2.csv', stringsAsFactors=FALSE)
+trans2$DebtDimId <- as.character(trans2$DebtDimId)
+trans3 <- read.csv('Data/April Vintage Transactions page 3.csv', stringsAsFactors=FALSE)
+trans3$DebtDimId <- as.character(trans3$DebtDimId)
+trans4 <- read.csv('Data/April Vintage Transactions page 4.csv', stringsAsFactors=FALSE)
+trans4$DebtDimId <- as.character(trans4$DebtDimId)
+
+trans.dat <- bind_rows( bind_rows(trans1,trans2),bind_rows(trans3,trans4) )
+nrow(trans.dat)
+head(trans.dat)
+summary(trans.dat)
+
+profile1 <- read.csv('Data/April Vintage 2013.csv', stringsAsFactors = FALSE)
+profile2 <- read.csv('Data/April Vintage 2013 _ page 2.csv', stringsAsFactors = FALSE)
+prof.dat <- bind_rows(profile1, profile2)
+nrow(prof.dat)
+head(prof.dat)
+summary(prof.dat)
+
+
+rm(trans1, trans2, trans3, trans4, profile1, profile2)
+```
+
+### 2. 
+
+
+
+
+
+## Implementation:
+
+
+
+
+
+
+
+
