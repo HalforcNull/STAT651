@@ -23,7 +23,7 @@ Given first two weeks' transactions, can we able to perdict a custom will have F
 
 
 
-### 1. Load data from file:
+## 1. Load data from file:
 
 ```{r}
 trans1 <- read.csv('Data/April Vintage Transactions page 1.csv', stringsAsFactors=FALSE)
@@ -50,13 +50,114 @@ summary(prof.dat)
 rm(trans1, trans2, trans3, trans4, profile1, profile2)
 ```
 
-### 2. 
+## 2. First Payment Default members:
+
+The statement date of this card is fixed, which means some member will have a very short 'first month'.
+Therefore, I used another way to define the First Payment Default:
+  1. Month on book less than 2
+  2. DisplayMinPay is greater than ActualMinPay
+
+### All unique member in our data set
+```{r}
+length(unique(prof.dat$DebtDimId))
+```
+
+### Member has MOB 0 or 1 data:
+```{r}
+length(prof.dat$DebtDimId[which(prof.dat$MOB==0)])
+length(prof.dat$DebtDimId[which(prof.dat$MOB==1)])
+```
+
+### Apply our filter
+```{r}
+MOB.0 <- prof.dat %>%
+    filter(MOB == 0) %>%
+    filter(DisplayMinPay > ActualMinPay) 
+
+MOB.1 <- prof.dat %>%
+    filter(MOB == 1) %>%
+    filter(DisplayMinPay > ActualMinPay) 
+
+
+nrow(MOB.0)
+nrow(MOB.1)
+
+```
+
+### Members we believe having FPD
+```{r}
+ProblemId <- unique(c(MOB.0$DebtDimId, MOB.1$DebtDimId))
+length(ProblemId)
+```
+
+
+## 3. Transaction day after getting card
+
+We consider time into our model as an very important factor. There are many way to using the transaction time data. 
+
+In this report, I'm using the day difference between member getting card and each transaction day as the time variable. 
+
+### Date of member getting card: First transaction date vs. Activation date
+
+Most credit cards are required active when user recieve the card, however, this card is actived when being issued. Therefore, activation date does not means the date member recieve the card. 
+
+In our case, we are interested in how much risk a member will owe our money. If a member never using our card, it has a lower risk they owe our money - They may still owe the membership fee, but at least, they are not stealing money from us. 
+
+Therefore, I decide to use First transaction date to indicate the day a member get their card.
+
+```{r}
+trans.dat$TimeDimDt <- as.Date(trans.dat$TimeDimDt, "%m/%d/%Y")
+trans.first.date <- trans.dat %>%
+  group_by(DebtDimId) %>%
+  summarise(firstDate = min(TimeDimDt))
+
+nrow(trans.first.date)
+```
+
+Compare with previous section, we can see there are more member in transaction data table than in user profile table.
+
+
+### Calculate Transaction day
+
+Transaction day = Transaction date - Date of member getting card
+
+```{r}
+trans <- trans.dat %>% 
+  full_join(trans.first.date, by='DebtDimId') %>%
+  mutate(DayAfterGetCard = as.numeric(TimeDimDt - firstDate))
+
+
+```
+
+
+### Transaction of first two weeks
+```{r}
+f.2.trans <- trans[trans$DayAfterGetCard <= 14,]
+f.2.TransCount <- f.2.trans %>%
+  group_by(DebtDimId) %>%
+  summarise(rowNum = n())
+f.2.max <- max(f.2.TransCount$rowNum)
+
+f.2.max
+```
+
+
+## 4. Training variable and Target variable selection
+
+I'm using transaction day (interger), transaction amount (numeric) and MMCcode (factor) as the training variables. 
+
+For the target variable, I made it up based on member FPD or not. For member who has FPD issue, I set the target variable as 999; for member who does not have FPD issue, I set the target variable as 0.
+
+
+## 5. Model
+
+CNN or RNN both able to handle this problem.
+Common CNN are easier to image and impletment, but hard to explain and optimize.
+RNN will more reasonable, but I need to learn how to build up such a RNN system.
 
 
 
 
-
-## Implementation:
 
 
 
