@@ -1,5 +1,5 @@
 ---
-title: "Homework 2 Part 1. Predict First Payment Default using first two week transaction"
+title: "Predict First Payment Default using first two week transaction"
 author: "Runan Yao"
 date: "November 22, 2018"
 output: html_document
@@ -36,15 +36,15 @@ trans4$DebtDimId <- as.character(trans4$DebtDimId)
 
 trans.dat <- bind_rows( bind_rows(trans1,trans2),bind_rows(trans3,trans4) )
 nrow(trans.dat)
-head(trans.dat)
-summary(trans.dat)
+#head(trans.dat)
+#summary(trans.dat)
 
 profile1 <- read.csv('Data/April Vintage 2013.csv', stringsAsFactors = FALSE)
 profile2 <- read.csv('Data/April Vintage 2013 _ page 2.csv', stringsAsFactors = FALSE)
 prof.dat <- bind_rows(profile1, profile2)
 nrow(prof.dat)
-head(prof.dat)
-summary(prof.dat)
+#head(prof.dat)
+#summary(prof.dat)
 
 
 rm(trans1, trans2, trans3, trans4, profile1, profile2)
@@ -54,7 +54,9 @@ rm(trans1, trans2, trans3, trans4, profile1, profile2)
 
 The statement date of this card is fixed, which means some member will have a very short 'first month'.
 Therefore, I used another way to define the First Payment Default:
+
   1. Month on book less than 2
+
   2. DisplayMinPay is greater than ActualMinPay
 
 ### All unique member in our data set
@@ -152,7 +154,9 @@ For the target variable, I made it up based on member FPD or not. For member who
 ## 5. Model
 
 CNN or RNN both able to handle this problem.
+
 Common CNN are easier to image and impletment, but hard to explain and optimize.
+
 RNN will more reasonable, but I need to learn how to build up such a RNN system.
 
 
