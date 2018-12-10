@@ -2,7 +2,11 @@
 title: "Predict First Payment Default using first two week transaction"
 author: "Runan Yao"
 date: "November 22, 2018"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
@@ -12,7 +16,7 @@ library(stringr)
 library(plotly)
 ```
 
-## Question we want to solve:
+# Question we want to solve:
 
 Given first two weeks' transactions, can we able to perdict a custom will have First Payment Default issue or not?
 
@@ -23,7 +27,7 @@ Given first two weeks' transactions, can we able to perdict a custom will have F
 
 
 
-## 1. Load data from file:
+# 1. Load data from file:
 
 ```{r}
 trans1 <- read.csv('Data/April Vintage Transactions page 1.csv', stringsAsFactors=FALSE)
@@ -50,7 +54,7 @@ nrow(prof.dat)
 rm(trans1, trans2, trans3, trans4, profile1, profile2)
 ```
 
-## 2. First Payment Default members:
+# 2. First Payment Default members:
 
 The statement date of this card is fixed, which means some member will have a very short 'first month'.
 Therefore, I used another way to define the First Payment Default:
@@ -59,18 +63,18 @@ Therefore, I used another way to define the First Payment Default:
 
   2. DisplayMinPay is greater than ActualMinPay
 
-### All unique member in our data set
+## 2.1 All unique member in our data set
 ```{r}
 length(unique(prof.dat$DebtDimId))
 ```
 
-### Member has MOB 0 or 1 data:
+## 2.2 Member has MOB 0 or 1 data:
 ```{r}
 length(prof.dat$DebtDimId[which(prof.dat$MOB==0)])
 length(prof.dat$DebtDimId[which(prof.dat$MOB==1)])
 ```
 
-### Apply our filter
+## 2.3 Apply our filter
 ```{r}
 MOB.0 <- prof.dat %>%
     filter(MOB == 0) %>%
@@ -86,20 +90,20 @@ nrow(MOB.1)
 
 ```
 
-### Members we believe having FPD
+## 2.4 Members we believe having FPD
 ```{r}
 ProblemId <- unique(c(MOB.0$DebtDimId, MOB.1$DebtDimId))
 length(ProblemId)
 ```
 
 
-## 3. Transaction day after getting card
+# 3. Transaction day after getting card
 
 We consider time into our model as an very important factor. There are many way to using the transaction time data. 
 
 In this report, I'm using the day difference between member getting card and each transaction day as the time variable. 
 
-### Date of member getting card: First transaction date vs. Activation date
+## 3.1 Date of member getting card: First transaction date vs. Activation date
 
 Most credit cards are required active when user recieve the card, however, this card is actived when being issued. Therefore, activation date does not means the date member recieve the card. 
 
@@ -119,7 +123,7 @@ nrow(trans.first.date)
 Compare with previous section, we can see there are more member in transaction data table than in user profile table.
 
 
-### Calculate Transaction day
+## 3.2 Calculate Transaction day
 
 Transaction day = Transaction date - Date of member getting card
 
@@ -129,7 +133,7 @@ trans <- trans.dat %>%
   mutate(DayAfterGetCard = as.numeric(TimeDimDt - firstDate))
 ```
 
-### Legacy account 
+## 3.3 Legacy account 
 
 These account have been here for a while, we cannot find their first transaction
 
@@ -142,10 +146,12 @@ legacyId <- prof.dat %>%
 
 trans <- trans %>% 
   filter(! DebtDimId %in% legacyId ) 
+
+length(legacyId)
 ```
 
 
-### Transaction of first two weeks
+## 3.4 Transaction of first two weeks
 ```{r}
 f.2.trans <- trans[trans$DayAfterGetCard <= 14,]
 f.2.TransCount <- f.2.trans %>%
@@ -157,7 +163,7 @@ f.2.max
 ```
 
 
-## 4. Training variable and Target variable selection
+# 4. Training variable and Target variable selection
 
 I'm using transaction day (interger), transaction amount (numeric) and MCCcode (factor) as the training variables. 
 
@@ -165,9 +171,9 @@ For the target variable, I made it up based on member FPD or not. For member who
 
 All data explorer below are based on the first 14 days transactions after getting the card.
 
-### 4.1 MCC Explorer
+## 4.1 MCC Explorer
 
-#### MCCcode vs MCCCategory and MCCDescription
+### MCCcode vs MCCCategory and MCCDescription ###
 
 ```{r}
 MCC.GourpByCode <- f.2.trans %>%
@@ -192,7 +198,7 @@ max(MCC.GourpByCategory$MCCDescriptionCount)
 max(MCC.GourpByCategory$MCCCodeCount)
 ```
 
-#### MCCcode to Description and Category
+### MCCcode to Description and Category ###
 
 ```{r}
 MCC.Code.to.Desc.Cate <- f.2.trans %>%
@@ -201,45 +207,49 @@ MCC.Code.to.Desc.Cate <- f.2.trans %>%
   ungroup()
 
 ```
-#### MCCcode frequency
+### MCCcode frequency ###
 
 ```{r}
 mcc.feq <- f.2.trans %>% 
   group_by(MCCcode) %>% 
   summarise( MCCcodeFeq = n() ) %>%
   select(MCCcode, MCCcodeFeq) %>%
-  left_join(MCC.Code.to.Desc.Cate, by='MCCcode')
+  left_join(MCC.Code.to.Desc.Cate, by='MCCcode') %>%
+  select(MCCcode, MCCcodeFeq, MCCDescription)
  
 plot_ly( mcc.feq, labels = ~MCCDescription, values = ~MCCcodeFeq, textinfo = 'label+percent', type = 'pie') %>% layout(showlegend = FALSE)
 ```
-#### MCCcode transaction ammount
+### MCCcode transaction ammount ###
 
 ```{r}
 mcc.amount <- f.2.trans %>% 
   group_by(MCCcode) %>% 
   summarise( MCCcodeAmount = sum(TransactionAmt) )%>%
   select(MCCcode, MCCcodeAmount) %>%
-  left_join(MCC.Code.to.Desc.Cate, by='MCCcode')
+  left_join(MCC.Code.to.Desc.Cate, by='MCCcode') %>%
+  select(MCCcode, MCCcodeAmount, MCCDescription)
  
 plot_ly( mcc.amount, labels = ~MCCDescription, values = ~MCCcodeAmount, textinfo = 'label+percent', type = 'pie') %>% layout(showlegend = FALSE)
 
 ```
 
-#### MCCCode amount per transaction
+### MCCCode amount per transaction ###
 
 ```{r}
-mcc.amount.pertrans <- mcc.feq %>% left_join(mcc.amount, by='MCCcode')
-  mutate(amountPerTrans = MCCcodeAmount / MCCcodeFeq) %>%
-  left_join(MCC.Code.to.Desc.Cate, by='MCCcode')
+mcc.amount.pertrans <- mcc.feq %>%
+  select(MCCcode, MCCcodeFeq) %>%
+  left_join(mcc.amount, by='MCCcode') %>%
+  mutate(amountPerTrans = MCCcodeAmount / MCCcodeFeq)
+  
 
 plot_ly( mcc.amount.pertrans, labels = ~MCCDescription, values = ~amountPerTrans, textinfo = 'label+percent', type = 'pie') %>% layout(showlegend = FALSE)
 
 ```
 
 
-### 4.2 Trans Day Explorer
+## 4.2 Trans Day Explorer
 
-#### Day vs. frequency
+### Day vs. frequency ###
 
 ```{r}
 day.feq <- f.2.trans %>% 
@@ -250,7 +260,7 @@ day.feq <- f.2.trans %>%
 plot_ly( day.feq, x = ~DayAfterGetCard, y = ~DayFeq, type='bar')
 ```
 
-#### Day vs. amount
+### Day vs. amount ###
 
 ```{r}
 day.amount <- f.2.trans %>% 
@@ -261,7 +271,7 @@ day.amount <- f.2.trans %>%
 plot_ly( day.amount, x = ~DayAfterGetCard, y = ~DayAmount, type='bar')
 ```
 
-#### Day vs. amount per transaction
+### Day vs. amount per transaction ###
 
 ```{r}
 day.amount.pertrans <- day.feq %>%
@@ -272,7 +282,7 @@ day.amount.pertrans <- day.feq %>%
 plot_ly( day.amount.pertrans, x = ~DayAfterGetCard, y = ~AmountPerTrans, type='bar')
 
 ```
-#### Day vs. amount - box plot_ly
+### Day vs. amount - box plot_ly ###
 
 ```{r}
 
@@ -281,31 +291,31 @@ plot_ly( f.2.trans, x = ~DayAfterGetCard, y = ~TransactionAmt, type = 'box')
 ```
 
 
-### 4.3 Account Infomation
+## 4.3 Account Infomation
 
-#### Open Date
+### Open Date ###
 
-#### Open Limit
+### Open Limit ###
 
-#### Current Limit
+### Current Limit ###
 
-#### Current State (Location)
+### Current State (Location) ###
 
-#### FPD rate
+### FPD rate ###
 
 ```{r}
 length(unique(prof.dat$DebtDimId)) / length(ProblemId)
 ```
 
-### 4.4 Combine Transaction info and Account Info
+## 4.4 Combine Transaction info and Account Info
 
-#### 4.4.1 Good/Bad Account
+### 4.4.1 Good/Bad Account ###
 ```{r}
 AllId <- unique(prof.dat$DebtDimId)
 SafeId <- AllId[! AllId %in% ProblemId ]
 ```
 
-#### 4.4.2 Transaction Frequency in different account by MCC 
+### 4.4.2 Transaction Frequency in different account by MCC ###
 
 ```{r}
 MCC.Feq.Good <- f.2.trans %>% 
@@ -326,7 +336,7 @@ MCC.Feq.All <- MCC.Feq.All %>%
   left_join(MCC.Code.to.Desc.Cate, by='MCCcode')
 ```
 
-##### Bar plot via abs value
+#### Bar plot via abs value ####
 
 ```{r}
 plot_ly( MCC.Feq.All, x = ~MCCDescription, y =~MCCcodeFeqFPD, type='bar', name='FPD Accounts') %>%
@@ -335,16 +345,17 @@ plot_ly( MCC.Feq.All, x = ~MCCDescription, y =~MCCcodeFeqFPD, type='bar', name='
 
 ```
 
-##### Pie Plot via ratio (Percentage of percentage)
+#### Pie Plot via ratio (Percentage of percentage) ####
 
 ```{r}
 MCC.Feq.All <- MCC.Feq.All %>%
-  mutate(RiskRatio = MCCcodeFeqFPD/(MCCcodeFeqGood+MCCcodeFeqFPD) )
+  mutate(FeqAll = MCCcodeFeqGood+MCCcodeFeqFPD) %>%
+  mutate(RiskRatio = MCCcodeFeqFPD/FeqAll )
 
 plot_ly( MCC.Feq.All, labels = ~MCCDescription, values = ~RiskRatio, textinfo = 'label+percent', type = 'pie') %>% layout(showlegend = FALSE)
 ```
 
-#### 4.4.3 Transaction Amount in different account by MCC 
+### 4.4.3 Transaction Amount in different account by MCC ###
 
 ```{r}
 MCC.Amount.Good <- f.2.trans %>% 
@@ -365,7 +376,7 @@ MCC.Amount.All <- MCC.Amount.All %>%
   left_join(MCC.Code.to.Desc.Cate, by='MCCcode')
 ```
 
-##### Bar plot via abs value
+#### Bar plot via abs value ####
 
 ```{r}
 plot_ly( MCC.Amount.All, x = ~MCCDescription, y =~MCCcodeAmountFPD, type='bar', name='FPD Accounts') %>%
@@ -373,11 +384,12 @@ plot_ly( MCC.Amount.All, x = ~MCCDescription, y =~MCCcodeAmountFPD, type='bar', 
   layout(yaxis = list(title = 'Amount'), barmode = 'stack')
 
 ```
-##### Pie Plot via ratio (Percentage of percentage)
+#### Pie Plot via ratio (Percentage of percentage) ####
 
 ```{r}
 MCC.Amount.All <- MCC.Amount.All %>%
-  mutate(RiskRatio = MCCcodeAmountFPD/(MCCcodeAmountGood+MCCcodeAmountFPD) )
+  mutate(AmountAll = MCCcodeAmountGood+MCCcodeAmountFPD) %>%
+  mutate(RiskRatio = MCCcodeAmountFPD/ AmountAll)
 
 plot_ly( MCC.Amount.All, labels = ~MCCDescription, values = ~RiskRatio, textinfo = 'label+percent', type = 'pie') %>% layout(showlegend = FALSE)
 ```
@@ -385,9 +397,9 @@ plot_ly( MCC.Amount.All, labels = ~MCCDescription, values = ~RiskRatio, textinfo
 
 
 
-## 5. Model
+# 5. Model
 
-### 5.1 Explainable Model
+## 5.1 Explainable Model
 
 Trade each transaction as a increment of chance to FPD. 
 
@@ -409,7 +421,7 @@ Cons:
 
 
 
-### 5.2 Deep Neural Network
+## 5.2 Deep Neural Network
 
 CNN or RNN both able to handle this problem.
 
@@ -421,11 +433,11 @@ RNN will more reasonable, but I need to learn how to build up such a RNN system.
 
 
 
-## 6. Discussion
+# 6. Discussion
 
 1. Impletment models
 2. FICO Score
-
+3. Clean up MCC code description
 
 
 
