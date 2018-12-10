@@ -149,24 +149,28 @@ store.name <- gsub(tbDelete.reg.pattern, '', store.name)
 ```
 
 Store Name 3: Remove string after digit
+
 ```{r}
 tbDelete.reg.pattern = '[[:space:]]*[[:alpha:]]*\\d+[[:print:]]*$'
 store.name <- gsub(tbDelete.reg.pattern, '', store.name)
 ```
 
 Store Name 4: Remove string after #
+
 ```{r}
 tbDelete.reg.pattern = '[[:space:]]*#[[:print:]]*$'
 store.name <- gsub(tbDelete.reg.pattern, '', store.name)
 ```
 
 Store Name 5: Remove string after @
+
 ```{r}
 tbDelete.reg.pattern = '[[:space:]]*@[[:print:]]*$'
 store.name <- gsub(tbDelete.reg.pattern, '', store.name)
 ```
 
 Store Name 6: Remove string after -
+
 ```{r}
 tbDelete.reg.pattern = '[[:space:]]*-[[:print:]]*$'
 store.name <- gsub(tbDelete.reg.pattern, '', store.name)
@@ -175,12 +179,14 @@ store.name <- gsub(tbDelete.reg.pattern, '', store.name)
 Store Name 7: Remove all non alpha beta charactor 
 
 This can solve the difference between 'Wendy's' and 'Wendy s'
+
 ```{r}
 tbDelete.reg.pattern = '[[:punct:][:space:]]*'
 store.name <- gsub(tbDelete.reg.pattern, '', store.name)
 ```
 
 Bind member id, transaction day, store name, store loc
+
 ```{r}
 member.id <- temp$DebtDimId
 transaction.Day <- temp$TimeDimDt
@@ -191,6 +197,7 @@ rm(member.id, transaction.Day, store.name, store.loc)
 
 
 ### 4. Fill Home state into transaction table
+
 ```{r}
 HomeState <- NULL
 MissingList <- NULL
@@ -230,6 +237,7 @@ length(HomeState)
 
 
 ### 5. Find out the transation which happens in a state different with the home state
+
 ```{r}
 tmp.dat <- cbind(tbl.clean.trans, HomeState)
 
@@ -243,6 +251,7 @@ rm(tmp.dat)
 ### 6. Using store name to calculate the popular rate
 
 All stores show up:
+
 ```{r}
 visited.stores <- tbl.clean.trans[trans.idx, ]
 

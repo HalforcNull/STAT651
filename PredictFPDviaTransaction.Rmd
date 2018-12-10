@@ -146,9 +146,126 @@ f.2.max
 
 ## 4. Training variable and Target variable selection
 
-I'm using transaction day (interger), transaction amount (numeric) and MMCcode (factor) as the training variables. 
+I'm using transaction day (interger), transaction amount (numeric) and MCCcode (factor) as the training variables. 
 
 For the target variable, I made it up based on member FPD or not. For member who has FPD issue, I set the target variable as 999; for member who does not have FPD issue, I set the target variable as 0.
+
+### 4.1 MCC Explorer
+
+#### MCCcode vs MCCCategory and MCCDescription
+
+```{r}
+MCC.GourpByCode <- f.2.trans %>%
+  group_by(MCCcode) %>%
+  summarise(MCCcategoryCount = n_distinct(MCCCategory), MCCDescriptionCount = n_distinct(MCCDescription))
+
+max(MCC.GourpByCode$MCCcategoryCount)
+max(MCC.GourpByCode$MCCDescriptionCount)
+
+MCC.GroupByDescription <- f.2.trans %>%
+  group_by(MCCDescription) %>%
+  summarise(MCCcategoryCount = n_distinct(MCCCategory), MCCCodeCount = n_distinct(MCCcode))
+
+max(MCC.GroupByDescription$MCCcategoryCount)
+max(MCC.GroupByDescription$MCCCodeCount)
+
+MCC.GourpByCategory <- f.2.trans %>%
+  group_by(MCCCategory) %>%
+  summarise(MCCDescriptionCount = n_distinct(MCCDescription), MCCCodeCount = n_distinct(MCCcode))  
+
+max(MCC.GourpByCategory$MCCDescriptionCount)
+max(MCC.GourpByCategory$MCCCodeCount)
+```
+
+#### MCCcode to Description and Category
+
+```{r}
+MCC.Code.to.Desc.Cate <- f.2.trans %>%
+  group_by(MCCcode) %>%
+  slice(1) %>%
+  ungroup()
+
+```
+#### MCCcode frequency
+
+```{r}
+mcc.feq <- f.2.trans %>% 
+  group_by(MCCcode) %>% 
+  summarise( MCCcodeFeq = n() ) %>%
+  select(MCCcode, MCCcodeFeq) %>%
+  left_join(MCC.Code.to.Desc.Cate, by='MCCcode')
+ 
+plot_ly( mcc.feq, labels = ~MCCDescription, values = ~MCCcodeFeq, textinfo = 'label+percent', type = 'pie') %>% layout(showlegend = FALSE)
+```
+#### MCCcode transaction ammount
+
+```{r}
+mcc.amount <- f.2.trans %>% 
+  group_by(MCCcode) %>% 
+  summarise( MCCcodeAmount = sum(TransactionAmt) )%>%
+  select(MCCcode, MCCcodeAmount) %>%
+  left_join(MCC.Code.to.Desc.Cate, by='MCCcode')
+ 
+plot_ly( mcc.amount, labels = ~MCCDescription, values = ~MCCcodeAmount, textinfo = 'label+percent', type = 'pie') %>% layout(showlegend = FALSE)
+
+```
+
+#### MCCCode amount per transaction
+
+```{r}
+mcc.amount.pertrans <- mcc.feq %>% left_join(mcc.ammount, by='MCCcode')
+  mutate(amountPerTrans = MCCcodeAmount / MCCcodeFeq) %>%
+  left_join(MCC.Code.to.Desc.Cate, by='MCCcode')
+
+plot_ly( mcc.amount.pertrans, labels = ~MCCDescription, values = ~amountPerTrans, textinfo = 'label+percent', type = 'pie') %>% layout(showlegend = FALSE)
+
+```
+
+
+### 4.2 Trans Day Explorer
+
+#### Day vs. frequency
+
+```{r}
+day.feq <- f.2.trans %>% 
+  group_by(DayAfterGetCard) %>% 
+  summarise( DayFeq = n() ) %>% 
+  arrange(DayAfterGetCard)
+
+plot_ly( day.feq, x = ~DayAfterGetCard, y = ~DayFeq, type='bar')
+```
+
+#### Day vs. amount
+
+```{r}
+day.amount <- f.2.trans %>% 
+  group_by(DayAfterGetCard) %>% 
+  summarise( DayAmount = sum(TransactionAmt) ) %>% 
+  arrange(DayAfterGetCard)
+
+plot_ly( day.amount, x = ~DayAfterGetCard, y = ~DayAmount, type='bar')
+```
+
+#### Day vs. amount per transaction
+
+```{r}
+day.amount.pertrans <- day.feq %>%
+  left_join(day.amount, by='DayAfterGetCard') %>%
+  mutate(AmountPerTrans = DayAmount / DayFeq) %>%
+  arrange(DayAfterGetCard)
+
+plot_ly( day.amount.pertrans, x = ~DayAfterGetCard, y = ~AmountPerTrans, type='bar')
+
+```
+#### Day vs. amount - box plot_ly
+
+```{r}
+
+
+
+```
+
+
 
 
 ## 5. Model
