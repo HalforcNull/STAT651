@@ -127,8 +127,21 @@ Transaction day = Transaction date - Date of member getting card
 trans <- trans.dat %>% 
   full_join(trans.first.date, by='DebtDimId') %>%
   mutate(DayAfterGetCard = as.numeric(TimeDimDt - firstDate))
+```
 
+### Legacy account 
 
+These account have been here for a while, we cannot find their first transaction
+
+```{r}
+legacyId <- prof.dat %>% 
+  group_by(DebtDimId) %>%
+  summarise(minMOB = min(MOB)) %>%
+  filter(minMOB > 1) %>%
+  select(DebtDimId)
+
+trans <- trans %>% 
+  filter(! DebtDimId %in% legacyId ) 
 ```
 
 
@@ -149,6 +162,8 @@ f.2.max
 I'm using transaction day (interger), transaction amount (numeric) and MCCcode (factor) as the training variables. 
 
 For the target variable, I made it up based on member FPD or not. For member who has FPD issue, I set the target variable as 999; for member who does not have FPD issue, I set the target variable as 0.
+
+All data explorer below are based on the first 14 days transactions after getting the card.
 
 ### 4.1 MCC Explorer
 
@@ -213,7 +228,7 @@ plot_ly( mcc.amount, labels = ~MCCDescription, values = ~MCCcodeAmount, textinfo
 #### MCCCode amount per transaction
 
 ```{r}
-mcc.amount.pertrans <- mcc.feq %>% left_join(mcc.ammount, by='MCCcode')
+mcc.amount.pertrans <- mcc.feq %>% left_join(mcc.amount, by='MCCcode')
   mutate(amountPerTrans = MCCcodeAmount / MCCcodeFeq) %>%
   left_join(MCC.Code.to.Desc.Cate, by='MCCcode')
 
@@ -266,11 +281,135 @@ plot_ly( f.2.trans, x = ~DayAfterGetCard, y = ~TransactionAmt, type = 'box')
 ```
 
 
-### 
+### 4.3 Account Infomation
+
+#### Open Date
+
+#### Open Limit
+
+#### Current Limit
+
+#### Current State (Location)
+
+#### FPD rate
+
+```{r}
+length(unique(prof.dat$DebtDimId)) / length(ProblemId)
+```
+
+### 4.4 Combine Transaction info and Account Info
+
+#### 4.4.1 Good/Bad Account
+```{r}
+AllId <- unique(prof.dat$DebtDimId)
+SafeId <- AllId[! AllId %in% ProblemId ]
+```
+
+#### 4.4.2 Transaction Frequency in different account by MCC 
+
+```{r}
+MCC.Feq.Good <- f.2.trans %>% 
+  filter( DebtDimId %in% SafeId ) %>%
+  group_by(MCCcode) %>% 
+  summarise( MCCcodeFeqGood = n() ) 
+
+MCC.Feq.FPD <- f.2.trans %>% 
+  filter( DebtDimId %in% ProblemId ) %>%
+  group_by(MCCcode) %>% 
+  summarise( MCCcodeFeqFPD = n() )
+
+MCC.Feq.All <- full_join(MCC.Feq.Good, MCC.Feq.FPD, by='MCCcode')
+
+
+MCC.Feq.All <- MCC.Feq.All %>%
+  select(MCCcode, MCCcodeFeqFPD, MCCcodeFeqGood ) %>%
+  left_join(MCC.Code.to.Desc.Cate, by='MCCcode')
+```
+
+##### Bar plot via abs value
+
+```{r}
+plot_ly( MCC.Feq.All, x = ~MCCDescription, y =~MCCcodeFeqFPD, type='bar', name='FPD Accounts') %>%
+  add_trace(y = ~MCCcodeFeqGood, name = 'Good Accounts') %>%
+  layout(yaxis = list(title = 'Feq'), barmode = 'stack')
+
+```
+
+##### Pie Plot via ratio (Percentage of percentage)
+
+```{r}
+MCC.Feq.All <- MCC.Feq.All %>%
+  mutate(RiskRatio = MCCcodeFeqFPD/(MCCcodeFeqGood+MCCcodeFeqFPD) )
+
+plot_ly( MCC.Feq.All, labels = ~MCCDescription, values = ~RiskRatio, textinfo = 'label+percent', type = 'pie') %>% layout(showlegend = FALSE)
+```
+
+#### 4.4.3 Transaction Amount in different account by MCC 
+
+```{r}
+MCC.Amount.Good <- f.2.trans %>% 
+  filter( DebtDimId %in% SafeId ) %>%
+  group_by(MCCcode) %>% 
+  summarise( MCCcodeAmountGood = sum(TransactionAmt) ) 
+
+MCC.Amount.FPD <- f.2.trans %>% 
+  filter( DebtDimId %in% ProblemId ) %>%
+  group_by(MCCcode) %>% 
+  summarise( MCCcodeAmountFPD = sum(TransactionAmt) )
+
+MCC.Amount.All <- full_join(MCC.Amount.Good, MCC.Amount.FPD, by='MCCcode')
+
+
+MCC.Amount.All <- MCC.Amount.All %>%
+  select(MCCcode, MCCcodeAmountFPD, MCCcodeAmountGood ) %>%
+  left_join(MCC.Code.to.Desc.Cate, by='MCCcode')
+```
+
+##### Bar plot via abs value
+
+```{r}
+plot_ly( MCC.Amount.All, x = ~MCCDescription, y =~MCCcodeAmountFPD, type='bar', name='FPD Accounts') %>%
+  add_trace(y = ~MCCcodeAmountGood, name = 'Good Accounts') %>%
+  layout(yaxis = list(title = 'Amount'), barmode = 'stack')
+
+```
+##### Pie Plot via ratio (Percentage of percentage)
+
+```{r}
+MCC.Amount.All <- MCC.Amount.All %>%
+  mutate(RiskRatio = MCCcodeAmountFPD/(MCCcodeAmountGood+MCCcodeAmountFPD) )
+
+plot_ly( MCC.Amount.All, labels = ~MCCDescription, values = ~RiskRatio, textinfo = 'label+percent', type = 'pie') %>% layout(showlegend = FALSE)
+```
+
 
 
 
 ## 5. Model
+
+### 5.1 Explainable Model
+
+Trade each transaction as a increment of chance to FPD. 
+
+Believe each transaction are individual. 
+
+Then we can fomulize the model as:
+
+$$ChanceToFPD = \sum_i A_iC_i e^{(-C_t+t_i)}$$
+
+In which, $A_i$ denote the amount of transaction $i$, $C_i$ denote the affect ratio of MCC code of transaction $i$, $t_i$ denote the time of transaction $i$ happens, $C_t$ is a constant to centralize the data.
+
+Pros: 
+Easy to explain, easy to build.
+
+Cons:
+1. This model believe each transaction are individual, which may not correct
+2. This model cannot take advantage in big data
+
+
+
+
+### 5.2 Deep Neural Network
 
 CNN or RNN both able to handle this problem.
 
@@ -282,9 +421,10 @@ RNN will more reasonable, but I need to learn how to build up such a RNN system.
 
 
 
+## 6. Discussion
 
-
-
+1. Impletment models
+2. FICO Score
 
 
 
